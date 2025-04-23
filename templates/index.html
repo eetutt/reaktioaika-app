@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reaktioaikamittari</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h2>Reaktioaikagraafi</h2>
+    <canvas id="reactionChart" width="600" height="300"></canvas>
+
+    <script>
+        const ctx = document.getElementById('reactionChart').getContext('2d');
+        const reactionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Reaktioaika (ms)',
+                    data: [],
+                    borderColor: 'blue',
+                    tension: 0.3
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Aikaleima' } },
+                    y: { title: { display: true, text: 'Reaktioaika (ms)' } }
+                }
+            }
+        });
+
+        fetch('/api/data')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(d => {
+                    reactionChart.data.labels.push(d.timestamp);
+                    reactionChart.data.datasets[0].data.push(d.reaction_time);
+                });
+                reactionChart.update();
+            });
+        
+        const socket = io();
+        socket.on('new_reaction', function(data) {
+            reactionChart.data.labels.push(data.timestamp);
+            reactionChart.data.datasets[0].data.push(data.reaction_time);
+            reactionChart.update();
+        });
+    </script>
+</body>
+</html>
